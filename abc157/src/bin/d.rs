@@ -30,8 +30,7 @@ fn main() {
     }
 
     for i in 0..n {
-        let root = uf.root(i);
-        let total = uf.size[root];
+        let total = uf.size(i);
         let direct_friend = deg[i];
         let blocked = block_graph[i].iter().filter(|&b| uf.same(i, *b)).count();
         let ans = total - direct_friend - blocked - 1;
@@ -63,6 +62,11 @@ impl UnionFind {
 
     fn same(&mut self, x: usize, y: usize) -> bool {
         self.root(x) == self.root(y)
+    }
+
+    fn size(&mut self, i: usize) -> usize {
+        let root = self.root(i);
+        self.size[root]
     }
 
     fn unite(&mut self, x: usize, y: usize) {
