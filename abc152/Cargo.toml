@@ -10,6 +10,7 @@ proconio = "*"
 text_io = "*"
 itertools = "*"
 superslice = "*"
+num = "*"
 
 [profile.release]
 lto = true
