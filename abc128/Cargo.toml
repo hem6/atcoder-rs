@@ -8,6 +8,8 @@ edition = "2018"
 [dependencies]
 proconio = "*"
 text_io = "*"
+itertools = "*"
+superslice = "*"
 
 [profile.release]
 lto = true
