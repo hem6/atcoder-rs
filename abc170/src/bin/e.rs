@@ -13,11 +13,8 @@ fn main() {
         cd: [(Usize1, Usize1);q]
     }
 
-    let mut q: Vec<BinaryHeap<u64>> = vec![BinaryHeap::new(); 200_000];
-    let mut delq: Vec<BinaryHeap<u64>> = vec![BinaryHeap::new(); 200_000];
-
-    let mut strongest: BinaryHeap<Reverse<u64>> = BinaryHeap::new();
-    let mut del_strongest: BinaryHeap<Reverse<u64>> = BinaryHeap::new();
+    let mut q: Vec<BTreeMap<u64, u64>> = vec![BTreeMap::new(); 200_000];
+    let mut strongest: BTreeMap<u64, u64> = BTreeMap::new();
 
     let mut scores: Vec<u64> = Vec::new();
     let mut places: Vec<usize> = Vec::new();
@@ -25,12 +22,12 @@ fn main() {
     for (a, b) in ab {
         scores.push(a);
         places.push(b);
-        q[b].push(a);
+        *q[b].entry(a).or_insert(0) += 1;
     }
 
     for que in &q {
-        if let Some(&x) = que.peek() {
-            strongest.push(Reverse(x));
+        if let Some((&max_score, _)) = que.range(..).next_back() {
+            *strongest.entry(max_score).or_insert(0) += 1;
         }
     }
 
@@ -41,52 +38,43 @@ fn main() {
         // update the place
         places[c] = d;
 
-        update_que(&mut q[cur], &mut delq[cur]);
-        update_que(&mut q[d], &mut delq[d]);
-
         // remove the child from the current place
-        match q[cur].peek() {
-            Some(&x) if x == score => {
-                q[cur].pop();
-                update_que(&mut q[cur], &mut delq[cur]);
-
-                del_strongest.push(Reverse(score));
-                if let Some(&y) = q[cur].peek() {
-                    strongest.push(Reverse(y));
+        match q[cur].range(..).next_back() {
+            Some((&max_score, _count)) if max_score == score => {
+                remove_one(&mut q[cur], &score);
+                remove_one(&mut strongest, &score);
+                if let Some((&next_max_score, _count)) = q[cur].range(..).next_back() {
+                    *strongest.entry(next_max_score).or_insert(0) += 1;
                 }
             }
             _ => {
-                delq[cur].push(score);
+                remove_one(&mut q[cur], &score);
             }
         }
 
         // add the child to the next place
-        match q[d].peek() {
-            Some(&x) if x < score => {
-                del_strongest.push(Reverse(x));
-                strongest.push(Reverse(score));
-                q[d].push(score);
+        match q[d].range(..).next_back() {
+            Some((&max_score, _count)) if max_score < score => {
+                remove_one(&mut strongest, &max_score);
+                *strongest.entry(score).or_insert(0) += 1;
+                *q[d].entry(score).or_insert(0) += 1;
             }
             None => {
-                strongest.push(Reverse(score));
-                q[d].push(score);
+                *strongest.entry(score).or_insert(0) += 1;
+                *q[d].entry(score).or_insert(0) += 1;
             }
             _ => {
-                q[d].push(score);
+                *q[d].entry(score).or_insert(0) += 1;
             }
         }
 
-        update_que(&mut strongest, &mut del_strongest);
-        println!("{}", strongest.peek().unwrap().0);
+        println!("{}", strongest.range(..).next().unwrap().0);
     }
 }
 
-fn update_que<T: Ord + std::fmt::Debug>(q: &mut BinaryHeap<T>, delq: &mut BinaryHeap<T>) {
-    loop {
-        if q.peek() == None || delq.peek() == None || q.peek() != delq.peek() {
-            return;
-        }
-        q.pop();
-        delq.pop();
+fn remove_one(bm: &mut BTreeMap<u64, u64>, key: &u64) {
+    *bm.get_mut(key).unwrap() -= 1;
+    if bm.get(key) == Some(&0) {
+        bm.remove(key);
     }
 }
